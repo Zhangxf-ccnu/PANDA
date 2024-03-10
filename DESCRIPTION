@@ -1,0 +1,34 @@
+Package: PANDA
+Type: Package
+Title: PANDA enables simultaneous decoding of cell types and gene expressions for spatial transcriptomics
+Version: 1.0.0
+Authors@R: 
+    c(
+    person(given = "Meng-Guo",
+           family = "Wang",
+           email = "mengguowang@mails.ccnu.edu.cn",
+           role = c("aut", "cre")),
+    person(given = "Xiao-Fei",
+           family = "Zhang",
+           email = "zhangxf@ccnu.edu.cn",
+           role = c("aut"))
+    )
+Maintainer: Meng-Guo Wang <mengguowang@mails.ccnu.edu.cn>
+Description: PANDA is a probabilistic-based deconvolution method that simultaneously estimates cell type 
+             proportions and cell-type-specific gene expression for each spot in spatial transcriptomics.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.2.3
+Imports: 
+    doParallel,
+    foreach,
+    ggplot2,
+    ggrepel,
+    parallel,
+    Seurat,
+    umap
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
