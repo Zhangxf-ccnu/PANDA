@@ -9,9 +9,41 @@
 R package supporting the paper “**PANDA enables simultaneous decoding of
 cell types and gene expressions for spatial transcriptomics**”.
 
+PANDA is a probabilistic-based deconvolution method capable of
+simultaneously estimating cell type composition and cell-type-specific
+gene expression for spatial transcriptomics data. Its unique feature
+lies in addressing variation within the same cell type during
+deconvolution, achieved through the integration of archetypal analysis.
+PANDA requires the gene expression count matrix along with cell type
+labels from the scRNA-seq reference, as well as the gene expression
+count matrix from the spatial transcriptomics data. The method involves
+two key steps. Firstly, PANDA employs archetypal analysis on scRNA-seq
+reference data to infer cell-type-specific archetypes, providing a
+comprehensive characterization of the state space for each cell type.
+Subsequently, PANDA performs deconvolution on spatial transcriptomics
+data to deliver accurate estimates of cell type composition and
+cell-type-specific gene expression.
+
+![Schematic overview of PANDA](figure1.png)
+
 ## Installation
 
-You can install the development version of PANDA like so:
+The PANDA package has the following R-package dependencies: Seurat,
+doParallel, foreach, parallel, umap, ggplot2.
+
+The experiments implemented in the paper are based on Seurat v4.3.0,
+which can be installed as follows:
+
+``` r
+install.packages('remotes')
+remotes::install_version(package = 'Seurat', version = package_version('4.3.0'))
+```
+
+All other R-package dependencies can be installed via
+`install.packages`.
+
+After installing all dependencies, you can install the development
+version of PANDA as follows:
 
 ``` r
 install.packages("devtools")
@@ -67,6 +99,7 @@ expression <- st_results$mu
 ## Tutorial
 
 A tutorial with examples of the usage of PANDA is available at:
+[PANDA-examples.html](https://github.com/Zhangxf-ccnu/PANDA-examples).
 
 ## Contact
 
