@@ -6,8 +6,8 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-R package supporting the paper “**PANDA enables simultaneous decoding of
-cell types and gene expressions for spatial transcriptomics**”.
+R package supporting the paper “**PANDA decodes both cell types and gene
+expressions for spatial transcriptomics**”.
 
 PANDA is a probabilistic-based deconvolution method capable of
 simultaneously estimating cell type composition and cell-type-specific
