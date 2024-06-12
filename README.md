@@ -6,11 +6,11 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-R package supporting the paper “**PANDA decodes both cell types and gene
-expressions for spatial transcriptomics**”.
+R package supporting the paper “**Dual decoding of cell types and gene
+expression in spatial transcriptomics with PANDA**”.
 
 PANDA is a probabilistic-based deconvolution method capable of
-simultaneously estimating cell type composition and cell-type-specific
+simultaneously estimating cell type proportions and cell-type-specific
 gene expression for spatial transcriptomics data. Its unique feature
 lies in addressing variation within the same cell type during
 deconvolution, achieved through the integration of archetypal analysis.
@@ -21,7 +21,7 @@ two key steps. Firstly, PANDA employs archetypal analysis on scRNA-seq
 reference data to infer cell-type-specific archetypes, providing a
 comprehensive characterization of the state space for each cell type.
 Subsequently, PANDA performs deconvolution on spatial transcriptomics
-data to deliver accurate estimates of cell type composition and
+data to deliver accurate estimates of cell type proportions and
 cell-type-specific gene expression.
 
 ![Schematic overview of PANDA](figure1.png)
