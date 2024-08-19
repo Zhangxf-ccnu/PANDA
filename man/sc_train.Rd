@@ -12,6 +12,9 @@ sc_train(
   maxiter = 2000,
   do_initialize = TRUE,
   do_plot = TRUE,
+  min_counts = 200,
+  do_hvgs = TRUE,
+  do_markers = TRUE,
   n_hvgs = 2000,
   n_markers = 20,
   n_sample_cells = 500,
@@ -36,6 +39,12 @@ sc_train(
 
 \item{do_plot}{a logical value indicating whether to visualize the archetypes using UMAP (Uniform Manifold Approximation and Projection). The default is \code{TRUE}.}
 
+\item{min_counts}{an integer indicating the minimum total counts for cells to be included. The default is 200.}
+
+\item{do_hvgs}{a logical value indicating whether to find highly variable genes. The default is \code{TRUE}.}
+
+\item{do_markers}{a logical value indicating whether to find marker genes for each cell type. The default is \code{TRUE}.}
+
 \item{n_hvgs}{an integer indicating the number of highly variable genes used for archetypal analysis. The default is 2000.}
 
 \item{n_markers}{an integer indicating the number of marker genes used for archetypal analysis for each cell type. The default is 20.}
@@ -56,6 +65,8 @@ a list containing the following components:
   \item{\code{archetypes_all_list}}{a list containing the archetypes with all genes for each cell type.}
   \item{\code{archetypes_list}}{a list containing the archetypes with selected genes (highly variable genes and marker genes) for each cell type.}
   \item{\code{res_list}}{a list containing all results of archetypal analysis for each cell type.}
+  \item{\code{run_time}}{a value of the running time for archetypal analysis.}
+  \item{\code{peak_ram}}{a value of the peak memory usage for archetypal analysis.}
 }
 }
 \description{

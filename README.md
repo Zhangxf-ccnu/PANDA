@@ -29,7 +29,7 @@ cell-type-specific gene expression.
 ## Installation
 
 The PANDA package has the following R-package dependencies: Seurat,
-doParallel, foreach, parallel, umap, ggplot2.
+doParallel, foreach, parallel, umap, ggplot2, peakRAM.
 
 The experiments implemented in the paper are based on Seurat v4.3.0,
 which can be installed as follows:
@@ -73,13 +73,13 @@ library(PANDA)
 **Perform archetypal analysis on the scRNA-seq reference**
 
 ``` r
-sc_results <- sc_train(sc_counts, sc_labels, n_archetypes_vec = 10)
+sc_results <- sc_train(sc_counts, sc_labels, n_archetypes_vec = 10, save_dir = "./PANDA_results/sc_results")
 ```
 
 **Perform deconvolution on the spatial transcriptomics data**
 
 ``` r
-st_results <- st_train(st_counts, sc_results = sc_results)
+st_results <- st_train(st_counts, sc_results = sc_results, save_dir = "./PANDA_results/st_results")
 ```
 
 **Extract results**

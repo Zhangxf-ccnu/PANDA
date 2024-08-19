@@ -7,6 +7,9 @@
 sc_preprocess(
   sc_counts,
   sc_labels,
+  min_counts = 200,
+  do_hvgs = TRUE,
+  do_markers = TRUE,
   n_hvgs = 2000,
   n_markers = 20,
   n_sample_cells = 500
@@ -16,6 +19,12 @@ sc_preprocess(
 \item{sc_counts}{a matrix indicating the raw count expression of cells (cell x gene).}
 
 \item{sc_labels}{a vector indicating the corresponding cell type labels.}
+
+\item{min_counts}{an integer indicating the minimum total counts for cells to be included. The default is 200.}
+
+\item{do_hvgs}{a logical value indicating whether to find highly variable genes. The default is \code{TRUE}.}
+
+\item{do_markers}{a logical value indicating whether to find marker genes for each cell type. The default is \code{TRUE}.}
 
 \item{n_hvgs}{an integer indicating the number of highly variable genes to select. The default is 2000.}
 

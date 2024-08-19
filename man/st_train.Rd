@@ -12,6 +12,7 @@ st_train(
   tol = 1e-08,
   maxiter = 2000,
   save_res = TRUE,
+  save_mu_csv = FALSE,
   save_dir = "."
 )
 }
@@ -30,6 +31,8 @@ st_train(
 
 \item{save_res}{a logical value indicating whether to save the results. The default is \code{TRUE}.}
 
+\item{save_mu_csv}{a logical value indicating whether to save the cell-type-specific gene expression as csv files. The default is \code{FALSE}.}
+
 \item{save_dir}{a character string indicating the directory where the results are saved. The default is the current directory.}
 }
 \value{
@@ -46,6 +49,8 @@ a list containing the following components:
   \item{\code{sigma}}{a value of the parameter that determine the standard deviation of the normal distribution for the platform effect.}
   \item{\code{phi}}{a matrix of the expression of archetypes for all cell types.}
   \item{\code{phi_all}}{a matrix of the expression of archetypes with all genes for all cell types.}
+  \item{\code{run_time}}{a value of the running time for deconvolution.}
+  \item{\code{peak_ram}}{a value of the peak memory usage for deconvolution.}
 }
 }
 \description{

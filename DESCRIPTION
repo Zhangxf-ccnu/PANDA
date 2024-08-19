@@ -1,7 +1,7 @@
 Package: PANDA
 Type: Package
-Title: PANDA enables simultaneous decoding of cell types and gene expressions for spatial transcriptomics
-Version: 1.0.0
+Title: Dual decoding of cell types and gene expression in spatial transcriptomics with PANDA
+Version: 1.1.0
 Authors@R: 
     c(
     person(given = "Meng-Guo",
@@ -27,7 +27,8 @@ Imports:
     ggrepel,
     parallel,
     Seurat,
-    umap
+    umap,
+    peakRAM
 Suggests: 
     knitr,
     rmarkdown

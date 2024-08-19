@@ -7,6 +7,9 @@
 #' @param maxiter an integer indicating the maximum number of iterations. The default is 2000.
 #' @param do_initialize a logical value indicating whether to perform initialization. The default is \code{TRUE}.
 #' @param do_plot a logical value indicating whether to visualize the archetypes using UMAP (Uniform Manifold Approximation and Projection). The default is \code{TRUE}.
+#' @param min_counts an integer indicating the minimum total counts for cells to be included. The default is 200.
+#' @param do_hvgs a logical value indicating whether to find highly variable genes. The default is \code{TRUE}.
+#' @param do_markers a logical value indicating whether to find marker genes for each cell type. The default is \code{TRUE}.
 #' @param n_hvgs an integer indicating the number of highly variable genes used for archetypal analysis. The default is 2000.
 #' @param n_markers an integer indicating the number of marker genes used for archetypal analysis for each cell type. The default is 20.
 #' @param n_sample_cells an integer indicating the maximum number of cells contained in each cell type. Cell types with a cell count exceeding \code{n_sample_cells} will be downsampled to \code{n_sample_cells}. The default is 500.
@@ -20,28 +23,34 @@
 #'   \item{\code{archetypes_all_list}}{a list containing the archetypes with all genes for each cell type.}
 #'   \item{\code{archetypes_list}}{a list containing the archetypes with selected genes (highly variable genes and marker genes) for each cell type.}
 #'   \item{\code{res_list}}{a list containing all results of archetypal analysis for each cell type.}
+#'   \item{\code{run_time}}{a value of the running time for archetypal analysis.}
+#'   \item{\code{peak_ram}}{a value of the peak memory usage for archetypal analysis.}
 #' }
 #' @export
 #' @import parallel
 #' @import foreach
 #' @import doParallel
-sc_train <- function(sc_counts, sc_labels, n_archetypes_vec = 10, tol = 1e-8, maxiter = 2000, do_initialize = TRUE, do_plot = TRUE, n_hvgs = 2000, n_markers = 20, n_sample_cells = 500, do_parallel = TRUE, n_cores = 20, save_res = TRUE, save_dir = ".") {
+#' @import peakRAM
+sc_train <- function(sc_counts, sc_labels, n_archetypes_vec = 10, tol = 1e-8, maxiter = 2000, do_initialize = TRUE, do_plot = TRUE, min_counts = 200, do_hvgs = TRUE, do_markers = TRUE, n_hvgs = 2000, n_markers = 20, n_sample_cells = 500, do_parallel = TRUE, n_cores = 20, save_res = TRUE, save_dir = ".") {
 
   if (!dir.exists(save_dir)) {
     dir.create(save_dir, recursive = TRUE)
   }
 
-  sc_data <- sc_preprocess(sc_counts, sc_labels, n_hvgs = n_hvgs, n_markers = n_markers, n_sample_cells = n_sample_cells)
-  X_list <- sc_data$X_list
-  Z_list <- sc_data$Z_list
-  Z_all_list <- sc_data$Z_all_list
-  N_list <- sc_data$N_list
-  unique_labels <- sc_data$unique_labels
+  start_time <- Sys.time()
+
+  sc_peak <- peakRAM(
+  sc_data <- sc_preprocess(sc_counts, sc_labels, min_counts = min_counts, do_hvgs = do_hvgs, do_markers = do_markers, n_hvgs = n_hvgs, n_markers = n_markers, n_sample_cells = n_sample_cells),
+  X_list <- sc_data$X_list,
+  Z_list <- sc_data$Z_list,
+  Z_all_list <- sc_data$Z_all_list,
+  N_list <- sc_data$N_list,
+  unique_labels <- sc_data$unique_labels,
 
   if (length(n_archetypes_vec) == 1) {
     n_archetypes_vec <- rep(n_archetypes_vec, length(unique_labels))
     names(n_archetypes_vec) <- unique_labels
-  }
+  },
 
   if (do_parallel) {
     n_cores <- min(n_cores, length(unique_labels), detectCores() - 1)
@@ -90,8 +99,12 @@ sc_train <- function(sc_counts, sc_labels, n_archetypes_vec = 10, tol = 1e-8, ma
       cat(i, "\t", "end", "\n")
     }
   }
+  )
 
-  sc_results <- list(archetypes_all_list = archetypes_all_list, archetypes_list = archetypes_list, res_list = res_list)
+  end_time <- Sys.time()
+  sc_peak <- max(sc_peak$Peak_RAM_Used_MiB)
+
+  sc_results <- list(archetypes_all_list = archetypes_all_list, archetypes_list = archetypes_list, res_list = res_list, run_time = as.numeric(difftime(end_time, start_time, units = "secs")), peak_ram = sc_peak)
 
   if (save_res) {
     saveRDS(sc_results, file = paste(save_dir, "sc_results.rds", sep = "/"))
@@ -111,6 +124,7 @@ sc_train <- function(sc_counts, sc_labels, n_archetypes_vec = 10, tol = 1e-8, ma
 #' @param tol a value indicating the convergence threshold. The default is 1e-8.
 #' @param maxiter an integer indicating the maximum number of iterations. The default is 2000.
 #' @param save_res a logical value indicating whether to save the results. The default is \code{TRUE}.
+#' @param save_mu_csv a logical value indicating whether to save the cell-type-specific gene expression as csv files. The default is \code{FALSE}.
 #' @param save_dir a character string indicating the directory where the results are saved. The default is the current directory.
 #'
 #' @return a list containing the following components:
@@ -126,57 +140,71 @@ sc_train <- function(sc_counts, sc_labels, n_archetypes_vec = 10, tol = 1e-8, ma
 #'   \item{\code{sigma}}{a value of the parameter that determine the standard deviation of the normal distribution for the platform effect.}
 #'   \item{\code{phi}}{a matrix of the expression of archetypes for all cell types.}
 #'   \item{\code{phi_all}}{a matrix of the expression of archetypes with all genes for all cell types.}
+#'   \item{\code{run_time}}{a value of the running time for deconvolution.}
+#'   \item{\code{peak_ram}}{a value of the peak memory usage for deconvolution.}
 #' }
 #' @export
 #' @importFrom utils write.csv
-st_train <- function(st_counts, sc_results, n_hvgs = 5000, sigma = 0.3, tol = 1e-8, maxiter = 2000, save_res = TRUE, save_dir = ".") {
+#' @import peakRAM
+st_train <- function(st_counts, sc_results, n_hvgs = 5000, sigma = 0.3, tol = 1e-8, maxiter = 2000, save_res = TRUE, save_mu_csv = FALSE, save_dir = ".") {
 
   if (!dir.exists(save_dir)) {
     dir.create(save_dir, recursive = TRUE)
   }
 
-  archetypes_list <- sc_results$archetypes_list
-  archetypes_all_list <- sc_results$archetypes_all_list
+  start_time <- Sys.time()
+
+  st_peak <- peakRAM(
+  archetypes_list <- sc_results$archetypes_list,
+  archetypes_all_list <- sc_results$archetypes_all_list,
 
   keep_genes_sc <- intersect(Reduce(intersect, lapply(archetypes_list, function(x) {
     colnames(x)
-  })), colnames(st_counts))
+  })), colnames(st_counts)),
   keep_genes_st <- intersect(Reduce(intersect, lapply(archetypes_all_list, function(x) {
     colnames(x)
-  })), colnames(st_counts))
-  st_data <- st_preprocess(st_counts, n_hvgs = n_hvgs, keep_genes = keep_genes_st)
-  keep_genes_st <- colnames(st_data$Y)
-  keep_genes <- intersect(keep_genes_st, keep_genes_sc)
-  Y <- st_data$Y[, keep_genes]
-  N <- st_data$N
+  })), colnames(st_counts)),
+  st_data <- st_preprocess(st_counts, n_hvgs = n_hvgs, keep_genes = keep_genes_st),
+  keep_genes_st <- colnames(st_data$Y),
+  keep_genes <- intersect(keep_genes_st, keep_genes_sc),
+  Y <- st_data$Y[, keep_genes],
+  N <- st_data$N,
 
-  unique_labels <- names(archetypes_all_list)
+  unique_labels <- names(archetypes_all_list),
   archetypes_list <- lapply(archetypes_all_list, function(x) {
     x[, keep_genes]
-  })
-  phi <- Reduce(rbind, archetypes_list)
-  phi_all <- Reduce(rbind, archetypes_all_list)
+  }),
+  phi <- Reduce(rbind, archetypes_list),
+  phi_all <- Reduce(rbind, archetypes_all_list),
   Q <- (as.matrix(table(rep(unique_labels, times = sapply(archetypes_list, function(x) {
     dim(x)[1]
-  })), rownames(phi))) > 0) * 1
-  Q <- Q[unique_labels, rownames(phi)]
+  })), rownames(phi))) > 0) * 1,
+  Q <- Q[unique_labels, rownames(phi)],
 
-  st_results <- st_model(Y = Y, N = N, phi = phi, Q = Q, sigma = sigma, tol = tol, maxiter = maxiter)
+  st_results <- st_model(Y = Y, N = N, phi = phi, Q = Q, sigma = sigma, tol = tol, maxiter = maxiter),
   st_results$mu <- lapply(unique_labels, function(x) {
     st_results$alpha %*% diag(Q[x, ]) %*% phi_all
-  })
-  names(st_results$mu) <- unique_labels
+  }),
+  names(st_results$mu) <- unique_labels,
 
-  st_results$Q <- Q
-  st_results$unique_labels <- unique_labels
-  st_results$sigma <- sigma
-  st_results$phi <- phi
+  st_results$Q <- Q,
+  st_results$unique_labels <- unique_labels,
+  st_results$sigma <- sigma,
+  st_results$phi <- phi,
   st_results$phi_all <- phi_all
+  )
+
+  end_time <- Sys.time()
+  st_results$run_time <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  st_results$peak_ram <- max(st_peak$Peak_RAM_Used_MiB)
 
   if (save_res) {
     saveRDS(st_results, file = paste(save_dir, "st_results.rds", sep = "/"))
     write.csv(as.matrix(st_results$proportion), file = paste(save_dir, "PANDA_prop.csv", sep = "/"))
     write.csv(as.matrix(st_results$alpha), file = paste(save_dir, "PANDA_alpha.csv", sep = "/"))
+  }
+
+  if (save_mu_csv) {
     for (i in names(st_results$mu)) {
       write.csv(as.matrix(st_results$mu[[i]]), file = paste(save_dir, paste(c("PANDA", i, "mu.csv"), collapse = "_"), sep = "/"))
     }
@@ -408,6 +436,9 @@ st_model <- function(Y, N, phi, Q, sigma = 0.3, tol = 1e-8, maxiter = 2000) {
 #'
 #' @param sc_counts a matrix indicating the raw count expression of cells (cell x gene).
 #' @param sc_labels a vector indicating the corresponding cell type labels.
+#' @param min_counts an integer indicating the minimum total counts for cells to be included. The default is 200.
+#' @param do_hvgs a logical value indicating whether to find highly variable genes. The default is \code{TRUE}.
+#' @param do_markers a logical value indicating whether to find marker genes for each cell type. The default is \code{TRUE}.
 #' @param n_hvgs an integer indicating the number of highly variable genes to select. The default is 2000.
 #' @param n_markers an integer indicating the number of marker genes to select for each cell type. The default is 20.
 #' @param n_sample_cells an integer indicating the maximum number of cells contained in each cell type. Cell types with a cell count exceeding \code{n_sample_cells} will be downsampled to \code{n_sample_cells}. The default is 500.
@@ -422,12 +453,12 @@ st_model <- function(Y, N, phi, Q, sigma = 0.3, tol = 1e-8, maxiter = 2000) {
 #' }
 #' @export
 #' @import Seurat
-sc_preprocess <- function(sc_counts, sc_labels, n_hvgs = 2000, n_markers = 20, n_sample_cells = 500) {
+sc_preprocess <- function(sc_counts, sc_labels, min_counts = 200, do_hvgs = TRUE, do_markers = TRUE, n_hvgs = 2000, n_markers = 20, n_sample_cells = 500) {
 
   sc_counts <- as.matrix(sc_counts)
 
   N <- rowSums(sc_counts)
-  idx_keep <- which(N >= 200)
+  idx_keep <- which(N >= min_counts)
   N <- N[idx_keep]
   sc_counts <- sc_counts[idx_keep, ]
   sc_labels <- sc_labels[idx_keep]
@@ -436,16 +467,28 @@ sc_preprocess <- function(sc_counts, sc_labels, n_hvgs = 2000, n_markers = 20, n
   X <- sc_counts
   Z_all <- Z
 
-  n_hvgs <- min(n_hvgs, dim(sc_counts)[2])
-  dat <- CreateSeuratObject(counts = t(sc_counts), min.cells = 3, min.features = 200)
-  dat <- NormalizeData(dat)
-  dat <- FindVariableFeatures(dat, selection.method = "vst", nfeatures = n_hvgs)
-  hvgs <- VariableFeatures(dat)
+  if (do_hvgs) {
+    n_hvgs <- min(n_hvgs, dim(sc_counts)[2])
+    dat <- CreateSeuratObject(counts = t(sc_counts), min.cells = 3, min.features = 200)
+    dat <- NormalizeData(dat)
+    dat <- FindVariableFeatures(dat, selection.method = "vst", nfeatures = n_hvgs)
+    hvgs <- VariableFeatures(dat)
+  } else {
+    hvgs <- c()
+  }
 
-  markers <- find_markers(t(sc_counts), sc_labels, n_markers = n_markers)
-  markers <- Reduce("union", markers)
+  if (do_markers) {
+    markers <- find_markers(t(sc_counts), sc_labels, n_markers = n_markers)
+    markers <- Reduce("union", markers)
+  } else {
+    markers <- c()
+  }
 
-  keep_genes <- union(hvgs, markers)
+  if (!do_hvgs && !do_markers) {
+    keep_genes <- colnames(sc_counts)
+  } else {
+    keep_genes <- union(hvgs, markers)
+  }
 
   X <- X[, keep_genes]
   Z <- Z[, keep_genes]
